@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:18-bookworm
+    environment:
+      POSTGRES_DB: vocacional
+      POSTGRES_USER: vocacional
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Configura POSTGRES_PASSWORD en .env}
+    volumes:
+      - datos_vocacionales:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vocacional -d vocacional"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+  app:
+    build: .
+    init: true
+    ipc: private
+    shm_size: 256m
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/salud').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    environment:
+      DATABASE_URL: postgresql://vocacional:${POSTGRES_PASSWORD}@postgres:5432/vocacional
+      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
+      BOOTSTRAP_ADMIN: ${BOOTSTRAP_ADMIN:-admin-institucional}
+      BOOTSTRAP_PASSWORD: ${BOOTSTRAP_PASSWORD:-}
+      DEMO_DATA: ${DEMO_DATA:-0}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["sh", "-c", "npm run db:migrate && npm run db:seed && npm run dev -- --hostname 0.0.0.0"]
+    ports:
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
+volumes:
+  datos_vocacionales:

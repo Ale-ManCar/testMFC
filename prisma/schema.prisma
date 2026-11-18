@@ -1,0 +1,178 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  DECE
+  ADMIN
+}
+
+model User {
+  id String @id @default(uuid()) @db.Uuid
+  username String @unique
+  name String
+  passwordHash String
+  role Role
+  active Boolean @default(true)
+  mustChange Boolean @default(true)
+  sessions Session[]
+  student StudentProfile?
+  audit AuditLog[]
+}
+
+model Session {
+  digest String @id
+  userId String @db.Uuid
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires DateTime
+  @@index([userId])
+  @@index([expires])
+}
+
+model LoginLimit {
+  key String @id
+  hits Int
+  expires DateTime
+  @@index([expires])
+}
+
+model Institution {
+  id Int @id @default(1)
+  name String
+  retentionPolicy String @default("")
+  accessPolicy String @default("")
+}
+
+model AcademicYear {
+  id String @id
+  enrollment Enrollment[]
+  campaign Campaign?
+}
+
+model Parallel {
+  id String @id
+  enrollment Enrollment[]
+}
+
+model StudentProfile {
+  userId String @id @db.Uuid
+  user User @relation(fields: [userId], references: [id])
+  code String @unique
+  enrollment Enrollment[]
+}
+
+model Enrollment {
+  id String @id @default(uuid()) @db.Uuid
+  studentId String @db.Uuid
+  yearId String
+  parallelId String
+  grade String @default("Décimo")
+  student StudentProfile @relation(fields: [studentId], references: [userId])
+  year AcademicYear @relation(fields: [yearId], references: [id])
+  parallel Parallel @relation(fields: [parallelId], references: [id])
+  attempt AssessmentAttempt?
+  @@unique([studentId, yearId])
+  @@index([yearId, parallelId])
+}
+
+model Specialty {
+  id String @id
+  name String
+  shortName String
+  position Int @unique
+  questions Question[]
+}
+
+model QuestionnaireVersion {
+  id String @id @default(uuid()) @db.Uuid
+  label String @unique
+  publishedAt DateTime?
+  questions Question[]
+  campaigns Campaign[]
+}
+
+model Question {
+  id String @id @default(uuid()) @db.Uuid
+  versionId String @db.Uuid
+  number Int
+  specialtyId String
+  prompt String
+  active Boolean @default(true)
+  version QuestionnaireVersion @relation(fields: [versionId], references: [id])
+  specialty Specialty @relation(fields: [specialtyId], references: [id])
+  orders AssessmentQuestionOrder[]
+  @@unique([versionId, number])
+}
+
+model Campaign {
+  yearId String @id
+  versionId String @db.Uuid
+  open Boolean @default(true)
+  attemptLimit Int @default(1)
+  year AcademicYear @relation(fields: [yearId], references: [id])
+  version QuestionnaireVersion @relation(fields: [versionId], references: [id])
+  attempts AssessmentAttempt[]
+}
+
+model AssessmentAttempt {
+  id String @id @default(uuid()) @db.Uuid
+  enrollmentId String @unique @db.Uuid
+  campaignId String
+  startedAt DateTime @default(now())
+  completedAt DateTime?
+  cursor Int @default(1)
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id])
+  campaign Campaign @relation(fields: [campaignId], references: [yearId])
+  order AssessmentQuestionOrder[]
+  result AssessmentResult?
+  @@index([campaignId, completedAt])
+}
+
+model AssessmentQuestionOrder {
+  attemptId String @db.Uuid
+  position Int
+  questionId String @db.Uuid
+  attempt AssessmentAttempt @relation(fields: [attemptId], references: [id])
+  question Question @relation(fields: [questionId], references: [id])
+  answer Answer?
+  @@id([attemptId, position])
+  @@unique([attemptId, questionId])
+}
+
+model Answer {
+  attemptId String @db.Uuid
+  position Int
+  interested Boolean
+  savedAt DateTime @updatedAt
+  item AssessmentQuestionOrder @relation(fields: [attemptId, position], references: [attemptId, position])
+  @@id([attemptId, position])
+}
+
+model AssessmentResult {
+  attemptId String @id @db.Uuid
+  attempt AssessmentAttempt @relation(fields: [attemptId], references: [id])
+  interested Int
+  uninterested Int
+  answered Int
+  scores Json
+  studentName String
+  studentCode String
+  institutionName String
+  parallelLabel String
+}
+
+model AuditLog {
+  id BigInt @id @default(autoincrement())
+  actorId String @db.Uuid
+  actor User @relation(fields: [actorId], references: [id])
+  event String
+  target String
+  at DateTime @default(now())
+  @@index([at])
+  @@index([actorId])
+}

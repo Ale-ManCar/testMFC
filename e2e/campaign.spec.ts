@@ -1,0 +1,42 @@
+import { randomUUID } from "node:crypto";
+import { expect, test } from "@playwright/test";
+
+test("edita y valida una versión y administra la convocatoria", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Usuario", { exact: true }).fill("demo-admin");
+  await page.getByLabel("Contraseña", { exact: true }).fill("Demo-Admin-Solo-Local!");
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await page.getByRole("link", { name: "Institución y convocatorias" }).click();
+  const label = "Versión ficticia " + randomUUID().slice(0, 7);
+  await page.getByLabel("Nombre del borrador").fill(label);
+  await page.getByRole("button", { name: "Crear borrador" }).click();
+  await page.getByRole("link", { name: label, exact: true }).click();
+  const prompt = page.getByLabel("Pregunta 1", { exact: true });
+  const area = page.getByLabel("Especialidad 1", { exact: true });
+  const original = await area.inputValue();
+  const changed = "Me interesa planificar recorridos y actividades turísticas.";
+  await prompt.fill(changed);
+  await area.selectOption(original === "C" ? "T" : "C");
+  await page.getByRole("button", { name: "Publicar versión" }).click();
+  await expect(page.getByText("Distribuye 10 preguntas por especialidad antes de publicar.")).toBeVisible();
+  await expect(prompt).toHaveValue(changed);
+  await area.selectOption(original);
+  await page.getByRole("button", { name: "Guardar borrador" }).click();
+  await expect(page.getByText("Borrador guardado.")).toBeVisible();
+  await page.reload();
+  await expect(prompt).toHaveValue(changed);
+  await page.getByRole("button", { name: "Publicar versión" }).click();
+  await expect(page.getByText("Versión publicada", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Guardar borrador" })).toHaveCount(0);
+  await page.getByRole("link", { name: "Volver a configuración" }).click();
+  const existing = await page.getByRole("listitem").allTextContents();
+  const year = Array.from({ length: 25 }, (_, i) => (2000 + i) + "-" + (2001 + i))
+    .find(candidate => existing.every(text => !text.includes(candidate)));
+  expect(year).toBeDefined();
+  await page.getByLabel("Año lectivo", { exact: true }).fill(year!);
+  await page.getByLabel("Versión publicada", { exact: true }).selectOption({ label });
+  await page.getByRole("button", { name: "Abrir convocatoria" }).click();
+  const row = page.getByRole("listitem").filter({ hasText: year });
+  await row.getByRole("button", { name: "Cerrar convocatoria" }).click();
+  await expect(row.getByRole("button", { name: "Reabrir convocatoria" })).toBeVisible();
+});
