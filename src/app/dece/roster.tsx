@@ -31,13 +31,13 @@ export function Roster({ initial, data, years, parallels }: {
     </div>
     <section className="section">
       <h2>Estudiantes</h2>
-      <form className="mt-4" onSubmit={event => {
+      <form className="filter-form mt-4" onSubmit={event => {
         event.preventDefault();
         const values = new FormData(event.currentTarget);
         refresh({ year: String(values.get("year")), parallel: String(values.get("parallel")),
           status: String(values.get("status")) as RosterFilter["status"], query: String(values.get("query")), page: 1 });
       }}>
-        <fieldset disabled={pending} className="grid gap-3 md:grid-cols-[2fr_1fr_1fr_1fr_auto] items-end">
+        <fieldset disabled={pending} className="roster-filter-grid">
           <Field label="Nombre, cédula o código" name="query" type="search" maxLength={100} />
           <label className="field">Año lectivo<select name="year" defaultValue={initial.year}>
             {years.length ? years.map(y => <option key={y}>{y}</option>) : <option value="">Sin registros</option>}
@@ -53,17 +53,17 @@ export function Roster({ initial, data, years, parallels }: {
       </form>
       <p role="status" className="muted my-3">{pending ? "Consultando…" : roster.filtered === 1 ? "1 registro" : roster.filtered + " registros"}</p>
       {error && <p role="alert" className="error">{error}</p>}
-      {!roster.rows.length ? <p className="py-3">No hay estudiantes para los filtros seleccionados.</p> : <div className="scroll">
+      {!roster.rows.length ? <div className="empty-state"><strong>No se encontraron estudiantes</strong><p>Prueba con otro nombre, cédula, paralelo o estado.</p></div> : <div className="scroll">
         <table aria-label="Estudiantes y estado de evaluación"><thead><tr>
           <th>Código</th><th>Estudiante</th><th>Paralelo</th><th>Estado</th><th>Fecha de finalización</th><th>Acción</th>
         </tr></thead><tbody>{roster.rows.map(row => <tr key={row.id}>
           <td>{row.student.code}</td><td>{row.student.user.name}</td><td>{row.parallelId}</td>
-          <td>{row.attempt?.completedAt ? "Finalizada" : row.attempt ? "En progreso" : "Sin iniciar"}</td>
+          <td><span className={"status-tag " + (row.attempt?.completedAt ? "done" : row.attempt ? "started" : "")}>{row.attempt?.completedAt ? "Finalizada" : row.attempt ? "En progreso" : "Sin iniciar"}</span></td>
           <td>{row.attempt?.completedAt ? dateInEcuador.format(row.attempt.completedAt) : "—"}</td>
           <td>{row.attempt?.completedAt && <Link className="btn alt whitespace-nowrap" href={"/dece/informes/" + row.attempt.id}>Ver resultados</Link>}</td>
         </tr>)}</tbody></table>
       </div>}
-      {roster.filtered > 25 && <div className="actions mt-4">
+      {roster.filtered > 25 && <div className="actions table-pagination">
         <button className="btn alt" disabled={pending || filters.page === 1} onClick={() => refresh({ ...filters, page: filters.page - 1 })}>Anterior</button>
         <span>Página {filters.page} de {Math.ceil(roster.filtered / 25)}</span>
         <button className="btn alt" disabled={pending || filters.page * 25 >= roster.filtered} onClick={() => refresh({ ...filters, page: filters.page + 1 })}>Siguiente</button>

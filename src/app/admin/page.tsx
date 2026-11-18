@@ -27,7 +27,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         <thead><tr><th>Nombre</th><th>Código</th><th>Rol</th><th>Estado</th><th>Acción</th></tr></thead>
         <tbody>{users.map(user => <tr key={user.id}>
           <td>{user.name}</td><td>{user.student?.code ?? "—"}</td><td>{user.role === "STUDENT" ? "Estudiante" : "DECE"}</td>
-          <td>{user.active ? "Activa" : "Inactiva"}</td><td><Link className="btn alt" href={"/admin/cuentas/" + user.id}>Editar<span className="sr-only"> cuenta de {user.name}</span></Link></td>
+          <td><span className={"status-tag " + (user.active ? "done" : "inactive")}>{user.active ? "Activa" : "Inactiva"}</span></td><td><Link className="btn alt" href={"/admin/cuentas/" + user.id}>Editar<span className="sr-only"> cuenta de {user.name}</span></Link></td>
         </tr>)}</tbody>
       </table></div>}
       {(page > 1 || page * 25 < count) && <div className="actions mt-4">

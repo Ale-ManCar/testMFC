@@ -76,6 +76,7 @@ test("administración, estudiante, persistencia, DECE y PDF institucional", asyn
       await expect(student.getByText(position + " de 50 respondidas", { exact: true })).toBeVisible();
       if (position === 4) {
         await student.getByRole("button", { name: "Siguiente" }).click();
+        await expect(student.getByRole("heading", { name: "Pregunta 5 de 50", exact: true })).toBeVisible();
         await student.reload();
         await expect(student.getByRole("heading", { name: "Pregunta 5 de 50", exact: true })).toBeVisible();
         await expect(student.getByText("4 de 50 respondidas", { exact: true })).toBeVisible();

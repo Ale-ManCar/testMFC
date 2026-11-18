@@ -17,6 +17,6 @@ export function Viewer({ url, close }: { url: string; close: React.ReactNode }) 
       {close}
     </div>
     {printHelp && <p role="status" className="muted mb-3">Si el diálogo no aparece, abre el PDF en otra pestaña y usa la opción Imprimir del visor.</p>}
-    <iframe ref={pdf} className="w-full h-[75vh] border border-slate-300 bg-white" title="Visor del informe individual PDF" src={url} />
+    <iframe ref={pdf} className="viewer-frame" title="Visor del informe individual PDF" src={url} />
   </>;
 }

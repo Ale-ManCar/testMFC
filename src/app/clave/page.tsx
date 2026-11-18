@@ -7,7 +7,7 @@ export default async function PasswordPage() {
   const user = await sessionUser();
   if (!user) redirect("/");
   if (user.passwordLocked) redirect(roleHome[user.role]);
-  return <main className="workbook">
+  return <main className="workbook account-page">
     <p className="kicker">Seguridad de la cuenta</p>
     <h1>{user.mustChange ? "Actualiza tu contraseña temporal" : "Cambia tu contraseña"}</h1>
     <section className="section">

@@ -29,13 +29,14 @@ test("edita y valida una versión y administra la convocatoria", async ({ page }
   await expect(page.getByText("Versión publicada", { exact: true }).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Guardar borrador" })).toHaveCount(0);
   await page.getByRole("link", { name: "Volver a configuración" }).click();
+  await expect(page.getByRole("heading", { name: "Configuración institucional" })).toBeVisible();
   const existing = await page.getByRole("listitem").allTextContents();
   const year = Array.from({ length: 25 }, (_, i) => (2000 + i) + "-" + (2001 + i))
     .find(candidate => existing.every(text => !text.includes(candidate)));
   expect(year).toBeDefined();
   await page.getByLabel("Año lectivo", { exact: true }).fill(year!);
   await page.getByLabel("Versión publicada", { exact: true }).selectOption({ label });
-  await page.getByRole("button", { name: "Abrir convocatoria" }).click();
+  await page.getByRole("button", { name: "Abrir convocatoria", exact: true }).click();
   const row = page.getByRole("listitem").filter({ hasText: year });
   await row.getByRole("button", { name: "Cerrar convocatoria" }).click();
   await expect(row.getByRole("button", { name: "Reabrir convocatoria" })).toBeVisible();

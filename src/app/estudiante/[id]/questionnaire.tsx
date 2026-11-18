@@ -58,11 +58,11 @@ export function Questionnaire({ id, questions, cursor, furthest }: { id: string;
     <div className="assessment-heading">
     <p className="kicker">Evaluación de intereses</p>
     <h1 ref={title} tabIndex={-1}>Pregunta {question.position} de 50</h1>
-    <p className="muted mt-2" id="answered-count">{answered} de 50 respondidas</p>
+    <div className="assessment-progress-label"><p id="answered-count">{answered} de 50 respondidas</p><span>{answered * 2}%</span></div>
     <progress aria-labelledby="answered-count" max={50} value={answered} />
     </div>
     <section className="section question-overview" aria-label="Estado de las 50 preguntas">
-      <h2 className="mb-3 text-base">Tu recorrido</h2>
+      <div className="overview-title"><h2>Tu recorrido</h2><span>{answered}/50</span></div>
       <ol className="question-map">
         {questions.map((item, i) => {
           const current = i === index;
@@ -76,19 +76,24 @@ export function Questionnaire({ id, questions, cursor, furthest }: { id: string;
           </li>;
         })}
       </ol>
-      <p className="muted mt-3 text-sm">Azul · Actual. Verde · Respondida. Rojo · Omitida. Gris · Pendiente.</p>
+      <ul className="map-legend" aria-label="Significado de los colores">
+        <li><i className="legend-dot current" aria-hidden="true" />Actual</li>
+        <li><i className="legend-dot answered" aria-hidden="true" />Respondida</li>
+        <li><i className="legend-dot skipped" aria-hidden="true" />Omitida</li>
+        <li><i className="legend-dot" aria-hidden="true" />Pendiente</li>
+      </ul>
     </section>
     <section className="section question-content">
       <fieldset disabled={pending || confirm}>
-        <legend className="text-xl font-semibold mb-5">{question.question.prompt}</legend>
-        <div className="grid gap-2">
+        <legend className="question-prompt">{question.question.prompt}</legend>
+        <div className="answer-options">
           {[true, false].map(value => <label className="choice" key={String(value)}>
             <input type="radio" name="interest" checked={(selection ?? answers[index]) === value} onChange={() => choose(value)} />
             {value ? "Me interesa" : "No me interesa"}
           </label>)}
         </div>
       </fieldset>
-      <div className="min-h-8 mt-2" aria-live="polite">{pending && !confirm ? "Guardando…" : saved ? "Respuesta guardada." : ""}</div>
+      <div className="answer-feedback" aria-live="polite">{pending && !confirm ? "Guardando…" : saved ? "Respuesta guardada." : ""}</div>
       {error && <p role="alert" className="error mb-3">{error}</p>}
       {!confirm && <div className="actions justify-end">
         {answered === 50

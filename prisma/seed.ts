@@ -34,10 +34,13 @@ async function seed() {
       await tx.user.upsert({ where: { username: "demo-dece" }, update: {}, create: {
         username: "demo-dece", name: "Consejería de prueba", passwordHash: await hashPassword("Demo-Dece-Solo-Local!"), role: "DECE", mustChange: false,
       } });
-      await tx.user.upsert({ where: { username: "demo-001" }, update: {}, create: {
-        username: "demo-001", name: "Estudiante Ficticio", passwordHash: await hashPassword("Demo-Estudiante-Temporal!"), role: "STUDENT",
-        student: { create: { code: "EJ-001", enrollment: { create: { yearId, parallelId: "A" } } } },
-      } });
+      const studentCount = await tx.user.count({ where: { role: "STUDENT" } });
+      if (studentCount === 0) {
+        await tx.user.create({ data: {
+          username: "demo-001", name: "Estudiante Ficticio", passwordHash: await hashPassword("Demo-Estudiante-Temporal!"), role: "STUDENT",
+          student: { create: { code: "EJ-001", enrollment: { create: { yearId, parallelId: "A" } } } },
+        } });
+      }
     }
   });
 }

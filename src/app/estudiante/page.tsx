@@ -13,7 +13,7 @@ export default async function StudentPage({ searchParams }: { searchParams: Prom
   return <Shell section="Estudiantes" home="/estudiante"><div className="workbook">
     <p className="kicker">Décimo de EGB</p>
     <h1>Hola, {user.name}</h1>
-    <section className="section">
+    <section className="section student-instructions">
       <h2>Antes de empezar</h2>
       <p className="mt-3">Leerás 50 enunciados. Elige «Me interesa» o «No me interesa» según tus propios intereses.</p>
       <p className="mt-2">Avanza con Siguiente. Las preguntas contestadas quedan bloqueadas al avanzar. Al terminar el recorrido podrás completar las omitidas. Tus respuestas se guardan al elegir una opción y puedes retomar la evaluación más tarde.</p>
@@ -21,8 +21,8 @@ export default async function StudentPage({ searchParams }: { searchParams: Prom
     </section>
     {noDisponible && <p className="error" role="alert">La convocatoria ya no está disponible.</p>}
     {enrollments.length === 0 && <p>No tienes matrículas registradas. Comunícate con la institución.</p>}
-    {enrollments.map(e => <section className="section" key={e.id}>
-      <h2>Evaluación {e.yearId}</h2><p className="muted mt-2 mb-4">{e.grade} {e.parallelId}</p>
+    {enrollments.map(e => <section className="section student-enrollment" key={e.id}>
+      <div><p className="kicker">Año lectivo {e.yearId}</p><h2>Evaluación de intereses</h2><p className="muted mt-2">{e.grade} {e.parallelId}</p>{e.attempt && <div className="enrollment-progress"><progress aria-label={"Respuestas de la evaluación " + e.yearId} max={50} value={e.attempt._count.order} /><span>{e.attempt.completedAt ? "Completada" : e.attempt._count.order + " de 50 respondidas"}</span></div>}</div>
       {e.attempt ? <Link className="btn" href={"/estudiante/" + e.attempt.id}>
         {e.attempt.completedAt ? "Ver confirmación" : "Continuar (" + e.attempt._count.order + " de 50 respondidas)"}
       </Link> : e.year.campaign?.open ? <form action={begin}>
