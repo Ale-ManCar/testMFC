@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useEffect, useState } from "react";
 import { readRoster, type RosterFilter } from "@/server/dece-actions";
 import { dateInEcuador } from "@/server/date";
 import { Field } from "@/ui/forms";
@@ -11,41 +11,55 @@ export function Roster({ initial, data, years, parallels }: {
 }) {
   const [filters, setFilters] = useState(initial);
   const [roster, setRoster] = useState(data);
-  const [pending, transition] = useTransition();
+  const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-  function refresh(next: RosterFilter) {
+  const [appliedFilters, setAppliedFilters] = useState(initial);
+
+  useEffect(() => {
+    let ignore = false;
+    setPending(true);
     setError("");
-    transition(async () => {
+    const timer = window.setTimeout(async () => {
       try {
-        setRoster(await readRoster(next));
-        setFilters(next);
+        const result = await readRoster(filters);
+        if (ignore) return;
+        setRoster(result);
+        setAppliedFilters(filters);
       } catch {
-        setError("No se pudo actualizar el listado. Intenta nuevamente.");
+        if (!ignore) setError("No se pudo actualizar el listado. Intenta nuevamente.");
+      } finally {
+        if (!ignore) setPending(false);
       }
-    });
+    }, 300);
+    return () => {
+      ignore = true;
+      window.clearTimeout(timer);
+    };
+  }, [filters]);
+
+  function changeFilters(change: Partial<RosterFilter>) {
+    setFilters(current => ({ ...current, ...change, page: 1 }));
   }
   return <>
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 my-5" aria-label="Resumen del año lectivo">
       {[["Estudiantes registrados", roster.total], ["Sin iniciar", roster.fresh], ["En progreso", roster.started], ["Finalizadas", roster.done]].map(([label, count]) =>
         <div className="stat" key={label}><strong>{count}</strong>{label}</div>)}
     </div>
-    <section className="section">
+    <section className="section" aria-busy={pending}>
       <h2>Estudiantes</h2>
       <form className="filter-form mt-4" onSubmit={event => {
         event.preventDefault();
-        const values = new FormData(event.currentTarget);
-        refresh({ year: String(values.get("year")), parallel: String(values.get("parallel")),
-          status: String(values.get("status")) as RosterFilter["status"], query: String(values.get("query")), page: 1 });
+        setFilters(current => ({ ...current }));
       }}>
-        <fieldset disabled={pending} className="roster-filter-grid">
-          <Field label="Nombre, cédula o código" name="query" type="search" maxLength={100} />
-          <label className="field">Año lectivo<select name="year" defaultValue={initial.year}>
+        <fieldset className="roster-filter-grid">
+          <Field label="Nombre, cédula o código" name="query" type="search" maxLength={100} value={filters.query} onChange={event => changeFilters({ query: event.target.value })} />
+          <label className="field">Año lectivo<select name="year" value={filters.year} onChange={event => changeFilters({ year: event.target.value })}>
             {years.length ? years.map(y => <option key={y}>{y}</option>) : <option value="">Sin registros</option>}
           </select></label>
-          <label className="field">Paralelo<select name="parallel"><option value="">Todos</option>
+          <label className="field">Paralelo<select name="parallel" value={filters.parallel} onChange={event => changeFilters({ parallel: event.target.value })}><option value="">Todos</option>
             {parallels.map(p => <option key={p}>{p}</option>)}
           </select></label>
-          <label className="field">Estado<select name="status"><option value="all">Todos</option>
+          <label className="field">Estado<select name="status" value={filters.status} onChange={event => changeFilters({ status: event.target.value as RosterFilter["status"] })}><option value="all">Todos</option>
             <option value="new">Sin iniciar</option><option value="started">En progreso</option><option value="done">Finalizada</option>
           </select></label>
           <button className="btn" type="submit">Buscar</button>
@@ -64,9 +78,9 @@ export function Roster({ initial, data, years, parallels }: {
         </tr>)}</tbody></table>
       </div>}
       {roster.filtered > 25 && <div className="actions table-pagination">
-        <button className="btn alt" disabled={pending || filters.page === 1} onClick={() => refresh({ ...filters, page: filters.page - 1 })}>Anterior</button>
-        <span>Página {filters.page} de {Math.ceil(roster.filtered / 25)}</span>
-        <button className="btn alt" disabled={pending || filters.page * 25 >= roster.filtered} onClick={() => refresh({ ...filters, page: filters.page + 1 })}>Siguiente</button>
+        <button className="btn alt" disabled={pending || appliedFilters.page === 1} onClick={() => setFilters({ ...appliedFilters, page: appliedFilters.page - 1 })}>Anterior</button>
+        <span>Página {appliedFilters.page} de {Math.ceil(roster.filtered / 25)}</span>
+        <button className="btn alt" disabled={pending || appliedFilters.page * 25 >= roster.filtered} onClick={() => setFilters({ ...appliedFilters, page: appliedFilters.page + 1 })}>Siguiente</button>
       </div>}
     </section>
   </>;

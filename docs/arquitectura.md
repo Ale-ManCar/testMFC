@@ -25,7 +25,7 @@ La auditoría registra identificadores internos y eventos, incluidas las modific
 
 ## Cuestionario y persistencia
 
-Una matrícula vincula estudiante, año y paralelo. La convocatoria vincula el año con una versión publicada e inmutable desde la aplicación. Puede cerrarse para impedir nuevos inicios. Se permite un intento por matrícula y se guarda el orden aleatorio mediante relaciones con las preguntas de la versión.
+Una matrícula vincula estudiante, año y paralelo. La convocatoria vincula el año con una versión publicada e inmutable desde la aplicación. Puede cerrarse para impedir nuevos inicios. Se permite un intento por matrícula y se guarda el orden aleatorio mediante relaciones con las preguntas de la versión. Cada orden nuevo evita coincidir por posición con los tres intentos asignados inmediatamente antes en esa convocatoria. El bloqueo de la convocatoria serializa los inicios simultáneos. La regla cubre grupos de cuatro inicios consecutivos cuando están en el mismo número de pregunta. Las evaluaciones ya iniciadas conservan su orden.
 
 Una transacción con bloqueo de matrícula evita inicios duplicados. Guardado y finalización bloquean la misma fila del intento. Cada posición tiene una sola respuesta, actualizable mientras el intento siga abierto. La finalización verifica las 50 respuestas, calcula puntajes y guarda resultado, fecha y datos de identificación para reproducir el informe aun si se modifican posteriormente la matrícula o los datos del estudiante.
 

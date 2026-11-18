@@ -31,10 +31,9 @@ function summary(data: Report) {
   <h2>Resultados por especialidad</h2>
   <table class="scores"><colgroup><col style="width:66%"><col style="width:17%"><col style="width:17%"></colgroup>
     <thead><tr><th>Especialidad</th><th>Puntaje</th><th>Afinidad</th></tr></thead>
-    <tbody>${data.scores.map(score => `<tr><td>${escape(score.name)}</td><td><b>${score.points} / 10</b></td><td class="blue"><b>${score.percent}%</b></td></tr>`).join("")}</tbody>
+    <tbody>${[...data.scores].sort((a, b) => b.percent - a.percent).map(score => `<tr><td>${escape(score.name)}</td><td><b>${score.points} / 10</b></td><td class="blue"><b>${score.percent}%</b></td></tr>`).join("")}</tbody>
   </table>
   <p class="highest"><b>Mayor afinidad declarada: ${escape(highest(data.scores).join(" / "))}</b></p>
-  <p class="note">Este informe describe intereses declarados. No mide aptitudes ni determina una especialidad obligatoria.</p>
   <h2>Registro de las 50 preguntas y respuestas</h2>`;
 }
 

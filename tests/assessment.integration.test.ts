@@ -50,3 +50,37 @@ integration("serializa inicios y respuestas, rechaza accesos ajenos y conserva e
 });
 
 afterAll(() => db.$disconnect());
+
+integration("cuatro inicios simultáneos reciben preguntas distintas en cada posición", async () => {
+  const prefix = "orden-" + randomUUID().slice(0, 8);
+  const ids: string[] = [];
+  try {
+    for (let index = 0; index < 4; index++) {
+      const user = await db.user.create({ data: {
+        username: prefix + "-" + index, name: "Prueba de orden aleatorio", role: "STUDENT",
+        active: false, passwordHash: "cuenta-sin-credenciales",
+        student: { create: { code: prefix + "-" + index, enrollment: { create: { yearId: "2026-2027", parallelId: "A" } } } },
+      } });
+      ids.push(user.id);
+    }
+    const enrollments = await db.enrollment.findMany({ where: { studentId: { in: ids } } });
+    const attempts = await Promise.all(enrollments.map(e => startAttempt(e.studentId, e.id)));
+    const orders = await Promise.all(attempts.map(attemptId =>
+      db.assessmentQuestionOrder.findMany({ where: { attemptId }, orderBy: { position: "asc" } })));
+    for (let position = 0; position < 50; position++) {
+      expect(new Set(orders.map(order => order[position].questionId)).size).toBe(4);
+    }
+    const resumed = await startAttempt(enrollments[0].studentId, enrollments[0].id);
+    expect(resumed).toBe(attempts[0]);
+  } finally {
+    const attempts = await db.assessmentAttempt.findMany({ where: { enrollment: { studentId: { in: ids } } } });
+    const attemptIds = attempts.map(a => a.id);
+    await db.$transaction([
+      db.assessmentQuestionOrder.deleteMany({ where: { attemptId: { in: attemptIds } } }),
+      db.assessmentAttempt.deleteMany({ where: { id: { in: attemptIds } } }),
+      db.enrollment.deleteMany({ where: { studentId: { in: ids } } }),
+      db.studentProfile.deleteMany({ where: { userId: { in: ids } } }),
+      db.user.deleteMany({ where: { id: { in: ids } } }),
+    ]);
+  }
+});

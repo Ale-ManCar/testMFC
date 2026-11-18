@@ -1,7 +1,7 @@
-import { randomInt } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { calculate, validateQuestions } from "@/domain/assessment";
 import { db } from "./db";
+import { randomQuestionOrder } from "./question-order";
 
 export class AssessmentError extends Error {}
 
@@ -18,7 +18,7 @@ export async function startAttempt(userId: string, enrollmentId: string) {
     await tx.$queryRaw`SELECT id FROM "Enrollment" WHERE id = ${enrollmentId}::uuid AND "studentId" = ${userId}::uuid FOR UPDATE`;
     await tx.$queryRaw`
       SELECT c."yearId" FROM "Campaign" c JOIN "Enrollment" e ON c."yearId" = e."yearId"
-      WHERE e.id = ${enrollmentId}::uuid AND e."studentId" = ${userId}::uuid FOR SHARE OF c`;
+      WHERE e.id = ${enrollmentId}::uuid AND e."studentId" = ${userId}::uuid FOR UPDATE OF c`;
     const enrollment = await tx.enrollment.findFirst({
       where: { id: enrollmentId, studentId: userId },
       include: { attempt: true, year: { include: { campaign: { include: { version: { include: { questions: { where: { active: true } } } } } } } } },
@@ -30,13 +30,16 @@ export async function startAttempt(userId: string, enrollmentId: string) {
     }
     const questions = campaign.version.questions;
     validateQuestions(questions);
-    for (let i = questions.length - 1; i > 0; i--) {
-      const j = randomInt(i + 1);
-      [questions[i], questions[j]] = [questions[j], questions[i]];
-    }
+    const previous = await tx.assessmentAttempt.findMany({
+      where: { campaignId: campaign.yearId }, orderBy: [{ startedAt: "desc" }, { id: "desc" }], take: 3,
+      select: { startedAt: true, order: { orderBy: { position: "asc" }, select: { questionId: true } } },
+    });
+    const order = randomQuestionOrder(questions, previous.map(attempt => attempt.order.map(item => item.questionId)));
+    // Strictly increasing timestamps preserve assignment order even for simultaneous starts.
+    const startedAt = new Date(Math.max(Date.now(), (previous[0]?.startedAt.getTime() ?? 0) + 1));
     const attempt = await tx.assessmentAttempt.create({ data: {
-      enrollmentId, campaignId: campaign.yearId,
-      order: { createMany: { data: questions.map((q, index) => ({ questionId: q.id, position: index + 1 })) } },
+      enrollmentId, campaignId: campaign.yearId, startedAt,
+      order: { createMany: { data: order.map((q, index) => ({ questionId: q.id, position: index + 1 })) } },
     } });
     return attempt.id;
   });
