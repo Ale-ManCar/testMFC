@@ -12,11 +12,11 @@ export default async function AttemptPage({ params }: { params: Promise<{ id: st
   if (!z.uuid().safeParse(id).success) notFound();
   const attempt = await studentAttempt(user.id, id);
   if (!attempt) notFound();
-  return <Shell section="Estudiantes" home="/estudiante"><div className="workbook">
+  return <Shell section="Estudiantes" home="/estudiante"><div className={attempt.completedAt ? "workbook" : "assessment-workspace"}>
     {attempt.completedAt ? <section className="section">
       <p className="kicker">Envío confirmado</p><h1>Evaluación completada</h1>
       <p className="mt-3 mb-5">Tus 50 respuestas quedaron registradas. El DECE puede consultar tu informe.</p>
       <Link href="/estudiante" className="btn">Volver a mi panel</Link>
-    </section> : <Questionnaire id={attempt.id} questions={attempt.order} cursor={attempt.cursor} />}
+    </section> : <Questionnaire id={attempt.id} questions={attempt.order} cursor={attempt.cursor} furthest={attempt.furthest} />}
   </div></Shell>;
 }

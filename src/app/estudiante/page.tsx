@@ -16,7 +16,7 @@ export default async function StudentPage({ searchParams }: { searchParams: Prom
     <section className="section">
       <h2>Antes de empezar</h2>
       <p className="mt-3">Leerás 50 enunciados. Elige «Me interesa» o «No me interesa» según tus propios intereses.</p>
-      <p className="mt-2">Puedes volver a preguntas anteriores y retomar la evaluación más tarde. Tus respuestas se guardan al elegir una opción.</p>
+      <p className="mt-2">Avanza con Siguiente. Las preguntas contestadas quedan bloqueadas al avanzar. Al terminar el recorrido podrás completar las omitidas. Tus respuestas se guardan al elegir una opción y puedes retomar la evaluación más tarde.</p>
       <p className="mt-2">La evaluación registra tus intereses declarados. No mide aptitudes ni determina una especialidad obligatoria.</p>
     </section>
     {noDisponible && <p className="error" role="alert">La convocatoria ya no está disponible.</p>}

@@ -127,6 +127,7 @@ export async function editAccount(_: FormState, form: FormData) {
   return run(async (tx, actorId) => {
     const user = await tx.user.findFirstOrThrow({ where: { id: input.data.id, role: { in: ["STUDENT", "DECE"] } } });
     if (operation === "reset") {
+      if (user.passwordLocked) return { error: "Esta cuenta tiene una contraseña fija." };
       const { password, passwordHash } = await generateCredentials();
       await tx.user.update({ where: { id: user.id }, data: { passwordHash, mustChange: true } });
       await tx.session.deleteMany({ where: { userId: user.id } });
@@ -134,6 +135,7 @@ export async function editAccount(_: FormState, form: FormData) {
       return { message: "Contraseña restablecida. Las sesiones anteriores se cerraron.", credentials: [{ username: user.username, password }] };
     }
     if (user.role === "STUDENT" && !studentInput.success) return invalid;
+    if (user.passwordLocked && input.data.username !== user.username) return { error: "La cédula de esta cuenta requiere una actualización institucional de sus credenciales fijas." };
     const active = form.get("active") === "on";
     await tx.user.update({ where: { id: user.id }, data: { name: input.data.name, username: input.data.username, active } });
     if (!active) await tx.session.deleteMany({ where: { userId: user.id } });

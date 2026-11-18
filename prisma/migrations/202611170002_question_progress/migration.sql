@@ -1,0 +1,1 @@
+ALTER TABLE "AssessmentAttempt" ADD COLUMN "furthest" INTEGER NOT NULL DEFAULT 1; UPDATE "AssessmentAttempt" SET "furthest" = "cursor";

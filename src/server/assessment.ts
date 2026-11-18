@@ -45,7 +45,7 @@ export async function startAttempt(userId: string, enrollmentId: string) {
 export async function studentAttempt(userId: string, attemptId: string) {
   return db.assessmentAttempt.findFirst({
     where: { id: attemptId, enrollment: { studentId: userId } },
-    select: { id: true, completedAt: true, cursor: true, order: {
+    select: { id: true, completedAt: true, cursor: true, furthest: true, order: {
       orderBy: { position: "asc" },
       select: { position: true, question: { select: { prompt: true } }, answer: { select: { interested: true } } },
     } },
@@ -53,8 +53,8 @@ export async function studentAttempt(userId: string, attemptId: string) {
 }
 
 async function lockAttempt(tx: Prisma.TransactionClient, userId: string, attemptId: string) {
-  const [attempt] = await tx.$queryRaw<{ completedAt: Date | null }[]>`
-    SELECT a."completedAt" FROM "AssessmentAttempt" a
+  const [attempt] = await tx.$queryRaw<{ completedAt: Date | null; cursor: number; furthest: number }[]>`
+    SELECT a."completedAt", a.cursor, a.furthest FROM "AssessmentAttempt" a
     JOIN "Enrollment" e ON e.id = a."enrollmentId"
     WHERE a.id = ${attemptId}::uuid AND e."studentId" = ${userId}::uuid
     FOR UPDATE OF a`;
@@ -66,11 +66,27 @@ export async function saveAnswer(userId: string, attemptId: string, position: nu
   return db.$transaction(async tx => {
     const attempt = await lockAttempt(tx, userId, attemptId);
     if (attempt.completedAt) throw new AssessmentError("La evaluación ya fue enviada.");
+    if (attempt.cursor !== position) throw new AssessmentError("Solo puedes responder la pregunta actual. Recarga la evaluación.");
     await tx.answer.upsert({
       where: { attemptId_position: { attemptId, position } }, update: { interested },
       create: { attemptId, position, interested },
     });
-    await tx.assessmentAttempt.update({ where: { id: attemptId }, data: { cursor: position } });
+  });
+}
+
+export async function advanceAttempt(userId: string, attemptId: string, position: number) {
+  return db.$transaction(async tx => {
+    const attempt = await lockAttempt(tx, userId, attemptId);
+    if (attempt.completedAt) throw new AssessmentError("La evaluación ya fue enviada.");
+    if (attempt.cursor !== position) return attempt.cursor;
+    const items = await tx.assessmentQuestionOrder.findMany({
+      where: { attemptId }, orderBy: { position: "asc" }, include: { answer: true },
+    });
+    const next = items.find(item => item.position > position && !item.answer)
+      ?? items.find(item => item.position < position && !item.answer);
+    if (!next) return position;
+    await tx.assessmentAttempt.update({ where: { id: attemptId }, data: { cursor: next.position, furthest: Math.max(attempt.furthest, position, next.position) } });
+    return next.position;
   });
 }
 

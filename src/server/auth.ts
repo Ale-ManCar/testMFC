@@ -43,7 +43,7 @@ export async function sessionUser() {
   const token = (await cookies()).get(cookieName)?.value;
   if (!token || !/^[\w-]{43}$/.test(token)) return null;
   const session = await db.session.findUnique({ where: { digest: digest(token) }, select: {
-    expires: true, user: { select: { id: true, username: true, name: true, active: true, mustChange: true, role: true } },
+    expires: true, user: { select: { id: true, username: true, name: true, active: true, mustChange: true, passwordLocked: true, role: true } },
   } });
   return session && session.expires > new Date() && session.user.active ? session.user : null;
 }

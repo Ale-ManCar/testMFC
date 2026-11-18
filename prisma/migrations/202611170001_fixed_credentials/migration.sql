@@ -1,0 +1,1 @@
+ALTER TABLE "User" ADD COLUMN "passwordLocked" BOOLEAN NOT NULL DEFAULT false;

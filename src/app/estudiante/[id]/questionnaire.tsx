@@ -1,12 +1,13 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { recordAnswer, submitAssessment } from "@/server/assessment-actions";
+import { nextQuestion, recordAnswer, submitAssessment } from "@/server/assessment-actions";
 
 type Item = { position: number; question: { prompt: string }; answer: { interested: boolean } | null };
 
-export function Questionnaire({ id, questions, cursor }: { id: string; questions: Item[]; cursor: number }) {
-  const initialIndex = cursor < 50 && questions[cursor - 1]?.answer && !questions[cursor]?.answer ? cursor : cursor - 1;
+export function Questionnaire({ id, questions, cursor, furthest }: { id: string; questions: Item[]; cursor: number; furthest: number }) {
+  const initialIndex = cursor - 1;
+  const [visitedThrough, setVisitedThrough] = useState(Math.max(cursor, furthest));
   const [index, setIndex] = useState(initialIndex);
   const [answers, setAnswers] = useState(() => questions.map(item => item.answer?.interested));
   const [pending, transition] = useTransition();
@@ -18,11 +19,21 @@ export function Questionnaire({ id, questions, cursor }: { id: string; questions
   const question = questions[index];
   const answered = answers.filter(answer => typeof answer === "boolean").length;
 
-  function navigate(next: number) {
-    setIndex(next);
+  function navigate() {
     setError("");
-    setSaved(false);
-    title.current?.focus();
+    transition(async () => {
+      try {
+        const result = await nextQuestion(id, question.position);
+        if (result.error || !result.position) { setError(result.error ?? "No se pudo avanzar."); return; }
+        setVisitedThrough(current => Math.max(current, question.position, result.position!));
+        setIndex(result.position - 1);
+        setSaved(false);
+        setSelection(undefined);
+        title.current?.focus();
+      } catch {
+        setError("No se pudo avanzar. Verifica tu conexión y vuelve a intentarlo.");
+      }
+    });
   }
 
   function choose(value: boolean) {
@@ -43,12 +54,31 @@ export function Questionnaire({ id, questions, cursor }: { id: string; questions
     });
   }
 
-  return <>
+  return <div className="assessment-layout">
+    <div className="assessment-heading">
     <p className="kicker">Evaluación de intereses</p>
     <h1 ref={title} tabIndex={-1}>Pregunta {question.position} de 50</h1>
     <p className="muted mt-2" id="answered-count">{answered} de 50 respondidas</p>
     <progress aria-labelledby="answered-count" max={50} value={answered} />
-    <section className="section">
+    </div>
+    <section className="section question-overview" aria-label="Estado de las 50 preguntas">
+      <h2 className="mb-3 text-base">Tu recorrido</h2>
+      <ol className="question-map">
+        {questions.map((item, i) => {
+          const current = i === index;
+          const complete = answers[i] !== undefined;
+          const skipped = !complete && item.position < visitedThrough;
+          const state = current ? "Actual" : complete ? "Respondida" : skipped ? "Sin responder" : "Pendiente";
+          return <li key={item.position} aria-current={current ? "step" : undefined}
+            aria-label={"Pregunta " + item.position + ": " + state} title={state}
+            className={"question-square " + (current ? "current" : complete ? "answered" : skipped ? "skipped" : "")}>
+            {item.position}
+          </li>;
+        })}
+      </ol>
+      <p className="muted mt-3 text-sm">Azul · Actual. Verde · Respondida. Rojo · Omitida. Gris · Pendiente.</p>
+    </section>
+    <section className="section question-content">
       <fieldset disabled={pending || confirm}>
         <legend className="text-xl font-semibold mb-5">{question.question.prompt}</legend>
         <div className="grid gap-2">
@@ -60,17 +90,18 @@ export function Questionnaire({ id, questions, cursor }: { id: string; questions
       </fieldset>
       <div className="min-h-8 mt-2" aria-live="polite">{pending && !confirm ? "Guardando…" : saved ? "Respuesta guardada." : ""}</div>
       {error && <p role="alert" className="error mb-3">{error}</p>}
-      {!confirm && <div className="actions justify-between">
-        <button type="button" className="btn alt" disabled={pending || index === 0} onClick={() => navigate(index - 1)}>Anterior</button>
-        {index < 49 ? <button type="button" className="btn" disabled={pending || answers[index] === undefined} onClick={() => navigate(index + 1)}>Siguiente</button>
-          : answered === 50 ? <button type="button" className="btn" disabled={pending} onClick={() => setConfirm(true)}>Finalizar evaluación</button>
-          : <button type="button" className="btn" disabled={pending} onClick={() => navigate(answers.findIndex(answer => answer === undefined))}>Ir a una pregunta pendiente</button>}
+      {!confirm && <div className="actions justify-end">
+        {answered === 50
+          ? <button type="button" className="btn" disabled={pending} onClick={() => setConfirm(true)}>Finalizar evaluación</button>
+          : <button type="button" className="btn" disabled={pending} onClick={navigate}>
+            {index === 49 ? "Completar preguntas pendientes" : "Siguiente"}
+          </button>}
       </div>}
       {confirm && <section className="mt-4" aria-labelledby="confirmation">
         <h2 id="confirmation">Confirma el envío</h2>
         <p className="mt-2 mb-4">Después de enviar, tus respuestas quedarán bloqueadas.</p>
         <div className="actions">
-          <button type="button" className="btn alt" disabled={pending} onClick={() => setConfirm(false)}>Revisar respuestas</button>
+          <button type="button" className="btn alt" disabled={pending} onClick={() => setConfirm(false)}>Continuar aquí</button>
           <button type="button" className="btn" disabled={pending} onClick={() => transition(async () => {
             const result = await submitAssessment(id);
             if (result?.error) setError(result.error);
@@ -78,5 +109,5 @@ export function Questionnaire({ id, questions, cursor }: { id: string; questions
         </div>
       </section>}
     </section>
-  </>;
+  </div>;
 }

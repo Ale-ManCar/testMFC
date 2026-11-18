@@ -2,7 +2,7 @@
 
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
-import { AssessmentError, finishAttempt, saveAnswer, startAttempt } from "./assessment";
+import { advanceAttempt, AssessmentError, finishAttempt, saveAnswer, startAttempt } from "./assessment";
 import { requireRole } from "./auth";
 
 export async function begin(form: FormData) {
@@ -40,4 +40,16 @@ export async function submitAssessment(id: string) {
     return { error: error instanceof AssessmentError ? error.message : "No se pudo finalizar. Intenta nuevamente." };
   }
   redirect("/estudiante/" + id);
+}
+
+export async function nextQuestion(id: string, position: number) {
+  const user = await requireRole("STUDENT");
+  if (!z.uuid().safeParse(id).success || !z.number().int().min(1).max(50).safeParse(position).success) {
+    return { error: "La pregunta no es válida." };
+  }
+  try {
+    return { position: await advanceAttempt(user.id, id, position) };
+  } catch (error) {
+    return { error: error instanceof AssessmentError ? error.message : "No se pudo avanzar. Intenta nuevamente." };
+  }
 }

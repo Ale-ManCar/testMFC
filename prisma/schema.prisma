@@ -20,6 +20,7 @@ model User {
   role Role
   active Boolean @default(true)
   mustChange Boolean @default(true)
+  passwordLocked Boolean @default(false)
   sessions Session[]
   student StudentProfile?
   audit AuditLog[]
@@ -126,6 +127,7 @@ model AssessmentAttempt {
   startedAt DateTime @default(now())
   completedAt DateTime?
   cursor Int @default(1)
+  furthest Int @default(1)
   enrollment Enrollment @relation(fields: [enrollmentId], references: [id])
   campaign Campaign @relation(fields: [campaignId], references: [yearId])
   order AssessmentQuestionOrder[]
