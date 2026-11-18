@@ -24,6 +24,8 @@ async function seed() {
       where: { label: "Cuestionario institucional 1" }, update: {},
       create: { label: "Cuestionario institucional 1", publishedAt: new Date(), questions: { createMany: { data: questions } } },
     });
+    // Demo accounts are only created for an empty installation.
+    if (demo && await tx.user.count() > 0) return;
     const admin = { username: demo ? "demo-admin" : username!, passwordHash: await hashPassword(demo ? "Demo-Admin-Solo-Local!" : password!) };
     await tx.user.upsert({ where: { username: admin.username }, update: {}, create: { ...admin, name: "Administración técnica", role: "ADMIN", mustChange: !demo } });
     if (demo) {

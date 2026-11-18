@@ -34,7 +34,8 @@ export async function readRoster(filters: RosterFilter) {
     db.enrollment.findMany({ where, skip: (page - 1) * 25, take: 25,
       orderBy: [{ student: { user: { name: "asc" } } }, { id: "asc" }],
       select: { id: true, yearId: true, parallelId: true, student: { select: { code: true, user: { select: { name: true } } } },
-        attempt: { select: { id: true, completedAt: true } } },
+        attempt: { select: { id: true, completedAt: true,
+          _count: { select: { order: { where: { answer: { isNot: null } } } } } } } },
     }),
   ], { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
   return { total, fresh, started, done, filtered, rows };
