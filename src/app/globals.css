@@ -252,3 +252,23 @@ tbody tr { transition:background .12s; }
   .enrollment-progress { flex-wrap:wrap; gap:8px; }
   .workspace-main .actions > a:not(.btn) { min-height:40px; display:inline-flex; align-items:center; }
 }
+
+@media(max-width:759px) {
+  .responsive-roster { overflow:visible; border:0; border-radius:0; }
+  .responsive-roster table { display:block; min-width:0; width:100%; }
+  .responsive-roster thead { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+  .responsive-roster tbody { display:grid; gap:12px; }
+  .responsive-roster tr { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; padding:16px; border:1px solid var(--line); border-radius:8px; background:white; }
+  .responsive-roster td { display:block; min-width:0; padding:0; border:0; font-size:13px; overflow-wrap:anywhere; }
+  .responsive-roster td::before { content:attr(data-label); display:block; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; font-size:9px; font-weight:600; margin-bottom:4px; }
+  .responsive-roster .roster-name { grid-column:1 / -1; grid-row:1; font-size:15px; font-weight:650; line-height:1.55; color:var(--navy); }
+  .responsive-roster .roster-name::before { display:none; }
+  .responsive-roster .roster-code { white-space:nowrap; font-weight:500; }
+  .responsive-roster .roster-action { grid-column:1 / -1; }
+  .responsive-roster .roster-action:empty { display:none; }
+  .responsive-roster .roster-action::before { display:none; }
+  .responsive-roster .roster-action .btn { width:100%; min-height:44px; margin-top:2px; font-size:13px; }
+  .responsive-roster .status-tag { white-space:normal; font-size:11px; }
+  .workspace-topbar nav { flex-wrap:wrap; row-gap:10px; }
+  .workspace-topbar button { min-height:32px; }
+}

@@ -67,14 +67,14 @@ export function Roster({ initial, data, years, parallels }: {
       </form>
       <p role="status" className="muted my-3">{pending ? "Consultando…" : roster.filtered === 1 ? "1 registro" : roster.filtered + " registros"}</p>
       {error && <p role="alert" className="error">{error}</p>}
-      {!roster.rows.length ? <div className="empty-state"><strong>No se encontraron estudiantes</strong><p>Prueba con otro nombre, cédula, paralelo o estado.</p></div> : <div className="scroll">
+      {!roster.rows.length ? <div className="empty-state"><strong>No se encontraron estudiantes</strong><p>Prueba con otro nombre, cédula, paralelo o estado.</p></div> : <div className="scroll responsive-roster">
         <table aria-label="Estudiantes y estado de evaluación"><thead><tr>
           <th>Código</th><th>Estudiante</th><th>Paralelo</th><th>Estado</th><th>Fecha de finalización</th><th>Acción</th>
         </tr></thead><tbody>{roster.rows.map(row => <tr key={row.id}>
-          <td>{row.student.code}</td><td>{row.student.user.name}</td><td>{row.parallelId}</td>
-          <td><span className={"status-tag " + (row.attempt?.completedAt ? "done" : row.attempt ? "started" : "")}>{row.attempt?.completedAt ? "Finalizada" : row.attempt ? "En progreso" : "Sin iniciar"}</span></td>
-          <td>{row.attempt?.completedAt ? dateInEcuador.format(row.attempt.completedAt) : "—"}</td>
-          <td>{row.attempt?.completedAt && <Link className="btn alt whitespace-nowrap" href={"/dece/informes/" + row.attempt.id}>Ver resultados</Link>}</td>
+          <td data-label="Código" className="roster-code">{row.student.code}</td><td data-label="Estudiante" className="roster-name">{row.student.user.name}</td><td data-label="Paralelo">{row.parallelId}</td>
+          <td data-label="Estado"><span className={"status-tag " + (row.attempt?.completedAt ? "done" : row.attempt ? "started" : "")}>{row.attempt?.completedAt ? "Finalizada" : row.attempt ? "En progreso" : "Sin iniciar"}</span></td>
+          <td data-label="Finalización">{row.attempt?.completedAt ? dateInEcuador.format(row.attempt.completedAt) : "Pendiente"}</td>
+          <td className="roster-action">{row.attempt?.completedAt && <Link className="btn alt whitespace-nowrap" href={"/dece/informes/" + row.attempt.id}>Ver resultados</Link>}</td>
         </tr>)}</tbody></table>
       </div>}
       {roster.filtered > 25 && <div className="actions table-pagination">
