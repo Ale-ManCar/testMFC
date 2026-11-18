@@ -41,7 +41,7 @@ export function Roster({ initial, data, years, parallels }: {
     if (filters.status !== "started") return;
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") setFilters(current => ({ ...current }));
-    }, 15000);
+    }, 5000);
     return () => window.clearInterval(timer);
   }, [filters.status]);
 
