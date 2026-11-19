@@ -68,6 +68,12 @@ Vitest omite la prueba de integración si `DATABASE_URL` no está definida en el
 
 ## Despliegue institucional
 
+### Render con entorno Node
+
+Configura `PLAYWRIGHT_BROWSERS_PATH=0` en las variables del servicio para instalar Chromium junto a Playwright y usar la misma ubicación al generar informes. Usa `npm ci && npm run build:render` como Build Command y `npm start` como Start Command. El comando de compilación genera Prisma Client e instala Chromium headless antes de compilar Next.js. Configura también `DATABASE_URL`, `APP_ORIGIN` con la URL HTTPS pública y `DEMO_DATA=0`.
+
+Si un informe devuelve 503, el log `REPORT_GENERATION_ERROR` identifica el tipo de fallo. `BROWSER_NOT_INSTALLED` indica que falta el navegador en la ubicación configurada y `BROWSER_DEPENDENCIES_MISSING` indica que faltan bibliotecas del sistema operativo. La disponibilidad de estas bibliotecas debe comprobarse en el entorno Node de Render durante la validación del despliegue.
+
 Compose está orientado a desarrollo. Para producción ejecuta `npm run build` y `npm start` con `DEMO_DATA=0`, detrás de un proxy HTTPS con `APP_ORIGIN` igual a la URL pública. Configura el proxy para conservar el host público y aplicar límites de acceso por IP. Protege la red y credenciales de PostgreSQL, ejecuta migraciones antes del arranque y programa copias de seguridad con restauraciones de prueba. Ejecuta Chromium como usuario de servicio con privilegios mínimos y habilita `PDF_CHROMIUM_SANDBOX=1` si el entorno admite el sandbox del navegador. Retira el secreto de arranque del entorno de ejecución después de crear la cuenta inicial.
 
 La institución puede registrar y publicar sus políticas de acceso y retención desde el panel. La retención se documenta en la aplicación y se ejecuta mediante los procedimientos de la institución. La aplicación no elimina expedientes según el texto de la política. Define responsables, plazos, procedimiento de atención de derechos y manejo de copias impresas antes de incorporar datos reales.

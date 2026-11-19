@@ -35,8 +35,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       ...privateHeaders, "Content-Type": "application/pdf",
       "Content-Disposition": (download ? "attachment" : "inline") + '; filename="informe-vocacional.pdf"',
     } });
-  } catch {
-    console.error("No se pudo generar o registrar un informe vocacional.");
+  } catch (error) {
+    // Infrastructure diagnostics only. Never log the report data or student identity.
+    const message = error instanceof Error ? error.message : "Error desconocido";
+    const category = message.includes("Executable doesn't exist") ? "BROWSER_NOT_INSTALLED"
+      : /shared libraries|Host system is missing dependencies/i.test(message) ? "BROWSER_DEPENDENCIES_MISSING"
+      : /timeout/i.test(message) ? "PDF_TIMEOUT"
+      : message.includes("área de impresión") ? "PDF_LAYOUT_OVERFLOW" : "PDF_GENERATION_FAILED";
+    console.error(JSON.stringify({ event: "REPORT_GENERATION_ERROR", category }));
     return new Response("No se pudo generar el informe. Vuelve a intentarlo.", { status: 503, headers: privateHeaders });
   }
 }

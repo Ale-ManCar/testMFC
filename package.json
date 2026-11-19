@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:render": "prisma generate && playwright install chromium --only-shell && next build",
     "start": "next start",
     "check": "tsc --noEmit",
     "test": "vitest run",
